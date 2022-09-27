@@ -1,0 +1,5 @@
+.idea/
+bin/
+app/webserver/web/file/
+*.log
+.DS_Store
