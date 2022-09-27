@@ -1,11 +1,3 @@
-# localfs
-本地小文件存储
-
-```
-go get github.com/PandaManPMC/localfs
-```
-
-```go
 package main
 
 import "localfs"
@@ -33,5 +25,3 @@ func main() {
 		panic(errInitDir)
 	}
 }
-
-```
