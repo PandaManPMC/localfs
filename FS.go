@@ -16,21 +16,32 @@ const size20M = 1024 * 1024 * 20
 
 var chaArr = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 
-//	UploadFile 文件上传
-//	fileName string 文件名；size int64 文件大小；file multipart.File 流。
-//	return string 文件本地路径；string 文件短地址； bool
-func UploadFile(fileName string, size int64, file multipart.File) (string, string, bool) {
-	defer file.Close()
-	var basePath string
-	if size < size5M {
-		basePath = tinyFileBasePath
-	} else if size < size20M {
-		basePath = smallFileBasePath
-	} else {
-		basePath = bigFileBasePath
+//	UploadFileByByte 文件上传 []byte
+func UploadFileByByte(fileName string, size int64, data []byte) (string, string, bool) {
+	basePath := getBasePath(size)
+	newFilePath, newFileName := getNewPath(basePath, fileName)
+	toFile, err := os.OpenFile(newFilePath, os.O_RDWR|os.O_CREATE, defaultPerm)
+	if nil != err {
+		logger.Error("OpenFile", err)
+		return "", "", false
 	}
-	dm := getDirMap(basePath)
+	defer toFile.Close()
+	toFile.Write(data)
+	return newFilePath, fmt.Sprintf("%s/%s", dirMap[basePath].relDir, newFileName), true
+}
 
+func getBasePath(size int64) string {
+	if size < size5M {
+		return tinyFileBasePath
+	} else if size < size20M {
+		return smallFileBasePath
+	} else {
+		return bigFileBasePath
+	}
+}
+
+func getNewPath(basePath, fileName string) (string, string) {
+	dm := getDirMap(basePath)
 	dir := uploadPath(dm, basePath)
 	format := fileName[strings.LastIndex(fileName, ".")+1:]
 
@@ -43,7 +54,16 @@ func UploadFile(fileName string, size int64, file multipart.File) (string, strin
 			break
 		}
 	}
+	return newFilePath, newFileName
+}
 
+//	UploadFile 文件上传
+//	fileName string 文件名；size int64 文件大小；file multipart.File 流。
+//	return string 文件本地路径；string 文件短地址； bool
+func UploadFile(fileName string, size int64, file multipart.File) (string, string, bool) {
+	defer file.Close()
+	basePath := getBasePath(size)
+	newFilePath, newFileName := getNewPath(basePath, fileName)
 	toFile, err := os.OpenFile(newFilePath, os.O_RDWR|os.O_CREATE, defaultPerm)
 	if nil != err {
 		logger.Error("OpenFile", err)
